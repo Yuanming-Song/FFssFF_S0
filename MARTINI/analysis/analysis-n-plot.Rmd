@@ -1,0 +1,94 @@
+---
+title: "FFssFF Structure Factor Analysis"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+```
+
+## Load and Process Data
+
+```{r load_data}
+# Function to read structure factor data
+read_sk_data <- function(concentration) {
+  # Paths to structure factor files
+  sk_ii <- read.table(sprintf("../data/%s/Sk-II-real.dat", concentration))
+  sk_iw <- read.table(sprintf("../data/%s/Sk-IW-real.dat", concentration))
+  sk_ww <- read.table(sprintf("../data/%s/Sk-WW-real.dat", concentration))
+  
+  list(II=sk_ii, IW=sk_iw, WW=sk_ww)
+}
+
+# List of concentrations
+concentrations <- c("25mM", "60mM", "100mM", "145mM", "205mM", 
+                   "260mM", "350mM", "525mM")
+
+# Read k-grid
+kgrid <- read.table("../data/25mM/Sk-kgrid.dat")
+```
+
+## Analysis Functions
+
+```{r analysis_functions}
+# Ornstein-Zernike fitting function
+fit_OZ <- function(k, data) {
+  # S(k) = S(0)/(1+xi*k^2)
+  fit <- nls(data ~ S0/(1 + xi*k^2), 
+             start=list(S0=max(data), xi=1),
+             data=data.frame(k=k, data=data))
+  return(fit)
+}
+
+# Function to process structure factors
+process_sk <- function(sk_data, kgrid) {
+  # Implementation here
+}
+```
+
+## Process All Concentrations
+
+```{r process_concentrations}
+results <- list()
+for(conc in concentrations) {
+  sk_data <- read_sk_data(conc)
+  results[[conc]] <- process_sk(sk_data, kgrid)
+}
+```
+
+## Plotting
+
+```{r plotting}
+# Structure factor plots
+ggplot(data_for_plot, aes(x=k, y=Sk, color=concentration)) +
+  geom_line() +
+  facet_wrap(~type, scales="free_y") +
+  theme_minimal() +
+  labs(title="Structure Factors at Different Concentrations",
+       x="k", y="S(k)")
+
+# Chemical potential analysis
+ggplot(mu_data, aes(x=concentration, y=mu)) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(title="Chemical Potential vs Concentration",
+       x="Concentration (mM)", y="μ (kT)")
+```
+
+## Save Results
+
+```{r save_results}
+# Save processed data and plots
+saveRDS(results, "processed_data.rds")
+ggsave("structure_factors.pdf", width=10, height=8)
+ggsave("chemical_potential.pdf", width=8, height=6)
+``` 

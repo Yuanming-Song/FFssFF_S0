@@ -1,76 +1,86 @@
-# FFssFF_S0: Phase Separation Analysis Using S0 Method
+# FFssFF Phase Separation Analysis
 
-This project investigates phase separation in FFssFF (Fragment-based solvation of Flexible molecules in Flexible molecules) systems using the S0 method developed by [Cheng et al.](https://github.com/BingqingCheng/S0).
+Analysis of phase separation in FFssFF systems using structure factor calculations and the S0 method.
 
-## Overview
-
-The S0 method enables computation of chemical potentials from structure factors in molecular simulations. This implementation specifically focuses on analyzing phase separation behavior in FFssFF systems by:
-1. Processing FFssFF trajectory data to extract relevant structural information
-2. Computing structure factors for selected components (SP5 beads and water)
-3. Analyzing phase separation tendencies through chemical potential calculations
-
-## Prerequisites
-
-- VMD (Visual Molecular Dynamics)
-- Python 3.x with packages:
-  - numpy
-  - scipy
-  - matplotlib
-  - jupyter
-
-## Directory Structure
+## Project Structure
 
 ```
 .
-├── scripts/
-│   ├── convert_to_lammpstrj.tcl    # VMD script for trajectory conversion
-│   ├── get-sk-3d.py               # Structure factor calculation
-│   └── analysis-n-plot.ipynb      # Analysis and visualization notebook
-├── data/
-│   └── [concentration]/           # Data organized by concentration
-│       ├── *ions*gro             # Structure files
-│       └── *md*xtc               # Trajectory files
+├── S0_base/               # Original S0 method implementation
+│   ├── scripts/          # Original analysis scripts
+│   └── input-*/          # Example input data
+├── MARTINI/              # MARTINI-specific analysis
+│   ├── scripts/          # Modified scripts for MARTINI
+│   ├── analysis/         # R markdown analysis
+│   └── data/             # Data organized by concentration
+│       ├── 25mM/
+│       ├── 60mM/
+│       └── ...
+└── CHARMM/              # CHARMM-specific analysis (future)
+    └── scripts/
 ```
 
-## Usage
+## MARTINI Analysis Workflow
 
-1. Convert FFssFF trajectories to LAMMPS format:
+1. **Data Preparation**
    ```bash
-   vmd -e scripts/convert_to_lammpstrj.tcl -args ./25mM output.lammpstrj 2000
+   # For each concentration (e.g., 25mM):
+   cd MARTINI/scripts
+   vmd -e convert_to_lammpstrj.tcl -args ../../data/25mM output.lammpstrj 2000
    ```
    This will:
    - Process the second half of the simulation
    - Select every other SP5 bead from CYS residues
    - Include all water beads
-   - Generate approximately 2000 frames
+   - Generate ~2000 frames
 
-2. Calculate structure factors:
+2. **Structure Factor Calculation**
    ```bash
-   python scripts/get-sk-3d.py output.lammpstrj Sk 8
+   cd MARTINI/data/25mM
+   python ../../scripts/get-sk-3d-martini.py output.lammpstrj Sk 8
    ```
-   This generates structure factors for:
-   - SP5-SP5 correlations
-   - SP5-water correlations
-   - Water-water correlations
+   Generates:
+   - SP5-SP5 correlations (II)
+   - SP5-water correlations (IW)
+   - Water-water correlations (WW)
 
-3. Analyze results using the Jupyter notebook:
-   ```bash
-   jupyter notebook scripts/analysis-n-plot.ipynb
-   ```
+3. **Analysis**
+   - Using Jupyter Notebook:
+     ```bash
+     jupyter notebook MARTINI/scripts/analysis-n-plot-martini.ipynb
+     ```
+   - Using R Markdown:
+     ```bash
+     Rscript -e "rmarkdown::render('MARTINI/analysis/analysis-n-plot.Rmd')"
+     ```
 
-## Method Details
+## Batch Processing
 
-The S0 method ([Cheng et al.](https://github.com/BingqingCheng/S0)) provides a framework for computing chemical potentials from structure factors. Key aspects:
+For processing multiple concentrations:
+```bash
+for conc in 25mM 60mM 100mM 145mM 205mM 260mM 350mM 525mM; do
+    # Convert trajectories
+    vmd -e MARTINI/scripts/convert_to_lammpstrj.tcl -args ./data/$conc $conc/output.lammpstrj 2000
+    
+    # Calculate structure factors
+    cd MARTINI/data/$conc
+    python ../../scripts/get-sk-3d-martini.py output.lammpstrj Sk 8
+    cd ../../..
+done
+```
 
-1. Structure Factor Calculation:
-   - Computes partial structure factors between system components
-   - Uses 3D Fourier transforms for spatial correlations
-   - Handles periodic boundary conditions
+## Analysis Output
 
-2. Chemical Potential Analysis:
-   - Extracts thermodynamic information from structural correlations
-   - Enables investigation of phase separation tendencies
-   - Provides insights into solution behavior at different concentrations
+The analysis generates:
+1. Structure factor data files:
+   - `Sk-II-real.dat`: SP5-SP5 correlations
+   - `Sk-IW-real.dat`: SP5-water correlations
+   - `Sk-WW-real.dat`: Water-water correlations
+
+2. Visualization:
+   - Structure factor plots
+   - Chemical potential analysis
+   - Phase separation indicators
 
 ## References
 
@@ -79,7 +89,11 @@ The S0 method ([Cheng et al.](https://github.com/BingqingCheng/S0)) provides a f
 
 ## Contributing
 
-Feel free to open issues or submit pull requests for improvements or bug fixes.
+When adding new scripts or modifying workflows:
+1. Update README.md with changes
+2. Document any new dependencies
+3. Update analysis notebooks if needed
+4. Follow the established directory structure
 
 ## License
 
