@@ -25,7 +25,7 @@ for conc in "${CONCENTRATIONS[@]}"; do
     # Step 1: Convert GROMACS trajectory to LAMMPS format
     echo "Converting trajectory for $conc..."
     cd "$SCRIPT_DIR"
-    /dfs9/tw/yuanmis1/vmd/bin/vmd -dispdev none -e /dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/scriptsconvert_to_lammpstrj.tcl -args "$BASE_INPUT_DIR/$conc/" "$conc.data" "$FRAMES"
+    /dfs9/tw/yuanmis1/vmd/bin/vmd -dispdev none -e /dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/scripts/convert_to_lammpstrj.tcl -args "$BASE_INPUT_DIR/$conc/" "$conc.data" "$FRAMES"
     
     # Check if conversion was successful
     if [ ! -f "$conc.data" ]; then
