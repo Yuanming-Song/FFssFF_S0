@@ -9,7 +9,7 @@ OUTPUT_DIR="/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/data"
 CONCENTRATIONS=("25mM" "60mM" "100mM" "145mM" "205mM" "260mM" "350mM" "525mM")
 
 # Number of frames to process (default 200 for testing, change to 2000 for production)
-FRAMES=200
+FRAMES=2000
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"

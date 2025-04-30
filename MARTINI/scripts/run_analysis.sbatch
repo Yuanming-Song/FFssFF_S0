@@ -4,12 +4,12 @@
 #SBATCH --partition=standard
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=20
 #SBATCH --output=R_analysis.out
 #SBATCH --error=R_analysis.err
 #SBATCH --mail-type=all
 #SBATCH --mail-user=yuanmis1@uci.edu
-#SBATCH --time=5:00:00
+#SBATCH --time=48:00:00
 
 # Load required modules
 module load python/3.9.7
