@@ -4,6 +4,7 @@ import numpy as np
 import glob,sys
 from math import pi
 import time
+import os
 
 def read_lammpstrj(filedesc):
     # three comment lines
@@ -65,25 +66,33 @@ def FT_density(q, kgrid):
         ak[n] = np.sum(np.exp(-1j*(q[:,0]*k[0]+q[:,1]*k[1]+q[:,2]*k[2])))
     return ak
 
-def main(sprefix="Sk", straj="out", sbins=8):
-    # the input file
-    print("Reading file:", straj,".lammpstrj")
-    traj = open(straj+'.lammpstrj',"r")
+def main(sprefix="Sk", straj="25mM", sbins=8):
+    # Base directory for output
+    base_dir = "/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/data"
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+    
+    # Input trajectory file
+    traj_path = f"/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/scripts/{straj}.data"
+    print("Reading file:", traj_path)
+    traj = open(traj_path, "r")
+    
     # number of k grids
     bins = int(sbins)
     print("Use number of bins:", bins)
 
-    # Outputs for SP5-SP5, SP5-Water, and Water-Water correlations
-    ofile_SS = open(sprefix+'-II-real.dat',"ab")  # SP5-SP5
-    ofile_SW = open(sprefix+'-IW-real.dat',"ab")  # SP5-Water
-    ofile_WW = open(sprefix+'-WW-real.dat',"ab")  # Water-Water
+    # Output files
+    output_prefix = os.path.join(base_dir, sprefix)
+    ofile_SS = open(output_prefix + '-II-real.dat', "ab")  # SP5-SP5
+    ofile_SW = open(output_prefix + '-IW-real.dat', "ab")  # SP5-Water
+    ofile_WW = open(output_prefix + '-WW-real.dat', "ab")  # Water-Water
 
     nframe = 0
     while True:
         start_time = time.time()
         # read frame
         try:
-            [ cell, types, sq] = read_lammpstrj(traj)
+            [cell, types, sq] = read_lammpstrj(traj)
         except:
             break
         nframe += 1
@@ -96,7 +105,7 @@ def main(sprefix="Sk", straj="out", sbins=8):
             kgrid = np.zeros((bins*bins*bins,3),float)
             kgridbase = np.zeros((bins*bins*bins,3),float)
             # initialize k grid
-            [ dkx, dky, dkz ] = [ 1./cell[0], 1./cell[1], 1./cell[2] ]
+            [dkx, dky, dkz] = [1./cell[0], 1./cell[1], 1./cell[2]]
             n=0
             for i in range(bins):
                 for j in range(bins):
@@ -104,9 +113,9 @@ def main(sprefix="Sk", straj="out", sbins=8):
                         if i+j+k == 0: pass
                         # initialize k grid
                         kgridbase[n,:] = (2.*pi)*np.array([i, j, k])
-                        kgrid[n,:] = [ dkx*i, dky*j, dkz*k ]
+                        kgrid[n,:] = [dkx*i, dky*j, dkz*k]
                         n+=1
-            np.savetxt(sprefix+'-kgrid.dat',kgrid)
+            np.savetxt(output_prefix + '-kgrid.dat', kgrid)
 
         print("--- %s seconds after read frame ---" % (time.time() - start_time))
         # FT analysis of density fluctuations
@@ -114,12 +123,15 @@ def main(sprefix="Sk", straj="out", sbins=8):
         print("--- %s seconds after FFT density ---" % (time.time() - start_time))
 
         # Outputs
-        np.savetxt(ofile_SS,sk_SS[None].real, fmt='%4.4e', delimiter=' ',header="Frame No: "+str(nframe))
-        np.savetxt(ofile_SW,sk_SW[None].real, fmt='%4.4e', delimiter=' ',header="Frame No: "+str(nframe))
-        np.savetxt(ofile_WW,sk_WW[None].real, fmt='%4.4e', delimiter=' ',header="Frame No: "+str(nframe))
+        np.savetxt(ofile_SS, sk_SS[None].real, fmt='%4.4e', delimiter=' ', header="Frame No: "+str(nframe))
+        np.savetxt(ofile_SW, sk_SW[None].real, fmt='%4.4e', delimiter=' ', header="Frame No: "+str(nframe))
+        np.savetxt(ofile_WW, sk_WW[None].real, fmt='%4.4e', delimiter=' ', header="Frame No: "+str(nframe))
 
     print("A total of data points ", nframe)
     sys.exit()
 
 if __name__ == '__main__':
-    main(*sys.argv[1:]) 
+    main(*sys.argv[1:])
+
+# to use: python ./get-sk-3d-martini.py [outputprefix] [inputfile] [nbin]
+# example: python ./get-sk-3d-martini.py Sk 25mM 8 
