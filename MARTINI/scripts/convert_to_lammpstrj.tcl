@@ -1,10 +1,10 @@
 # Usage: vmd -e convert_to_lammpstrj.tcl -args input_dir output_file [num_frames]
-# Example: vmd -e convert_to_lammpstrj.tcl -args ./25mM output.lammpstrj 2000
+# Example: vmd -e convert_to_lammpstrj.tcl -args ./25mM output.lammpstrj 200
 
 # Get command line arguments
 set input_dir [lindex $argv 0]
 set output_file [lindex $argv 1]
-set desired_frames 2000
+set desired_frames 200  # Default to 200 frames for quicker test runs
 if {[llength $argv] > 2} {
     set desired_frames [lindex $argv 2]
 }

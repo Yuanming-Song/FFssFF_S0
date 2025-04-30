@@ -69,11 +69,14 @@ def FT_density(q, kgrid):
 def main(sprefix="Sk", straj="25mM", sbins=8):
     # Base directory for output
     base_dir = "/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/data"
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir)
+    
+    # Create concentration-specific output directory
+    conc_dir = os.path.join(base_dir, straj)
+    if not os.path.exists(conc_dir):
+        os.makedirs(conc_dir)
     
     # Input trajectory file
-    traj_path = f"/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/scripts/{straj}.data"
+    traj_path = f"{straj}.data"
     print("Reading file:", traj_path)
     traj = open(traj_path, "r")
     
@@ -81,8 +84,8 @@ def main(sprefix="Sk", straj="25mM", sbins=8):
     bins = int(sbins)
     print("Use number of bins:", bins)
 
-    # Output files
-    output_prefix = os.path.join(base_dir, sprefix)
+    # Output files with concentration-specific paths
+    output_prefix = os.path.join(conc_dir, sprefix)
     ofile_SS = open(output_prefix + '-II-real.dat', "ab")  # SP5-SP5
     ofile_SW = open(output_prefix + '-IW-real.dat', "ab")  # SP5-Water
     ofile_WW = open(output_prefix + '-WW-real.dat', "ab")  # Water-Water
@@ -117,10 +120,10 @@ def main(sprefix="Sk", straj="25mM", sbins=8):
                         n+=1
             np.savetxt(output_prefix + '-kgrid.dat', kgrid)
 
-        print("--- %s seconds after read frame ---" % (time.time() - start_time))
+        print(f"--- {time.time() - start_time:.2f} seconds after reading frame {nframe} ---")
         # FT analysis of density fluctuations
         sk_SS, sk_SW, sk_WW = Sk(types, sq, kgridbase)
-        print("--- %s seconds after FFT density ---" % (time.time() - start_time))
+        print(f"--- {time.time() - start_time:.2f} seconds after FFT density for frame {nframe} ---")
 
         # Outputs
         np.savetxt(ofile_SS, sk_SS[None].real, fmt='%4.4e', delimiter=' ', header="Frame No: "+str(nframe))

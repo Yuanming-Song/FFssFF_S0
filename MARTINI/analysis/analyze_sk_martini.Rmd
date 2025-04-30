@@ -1,0 +1,246 @@
+---
+title: "MARTINI S(k) Analysis for FFssFF"
+author: "FFssFF Analysis"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(scales)
+library(latex2exp)
+```
+
+# System Information
+
+```{r system_info}
+# Constants and system parameters
+kbK_2_ev <- 0.00008661733
+T <- 300  # Temperature in K
+kbT <- kbK_2_ev * T
+
+# Concentrations in mM
+concentrations <- c(25, 60, 100, 145, 205, 260, 350, 525)
+conc_labels <- paste0(concentrations, "mM")
+
+# Base directory
+base_dir <- "/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/data"
+
+# Correlation types
+corr_types <- list(
+  "II" = "SP5-SP5",
+  "IW" = "SP5-Water",
+  "WW" = "Water-Water"
+)
+```
+
+# Helper Functions
+
+```{r helper_functions}
+# Ornstein-Zernike fitting function
+fit_OrnsteinZernike <- function(x, s0, xi) {
+  # S(k) = S(0)/(1+xi*k^2)
+  return(s0/(1 + xi * x^2))
+}
+
+# Function to get activity coefficient
+get_activity_coefficient <- function(saa, sab, nratio) {
+  return(1/(saa - sab * sqrt(nratio)))
+}
+
+# Function to read S(k) data for a single concentration
+read_sk_data <- function(conc_dir) {
+  # Read k-grid data
+  kgrid <- read.table(file.path(conc_dir, "Sk-kgrid.dat"))
+  k_values <- sqrt(rowSums(kgrid^2))
+  
+  # Read S(k) data for each correlation type
+  data <- list()
+  for(type in names(corr_types)) {
+    file_path <- file.path(conc_dir, paste0("Sk-", type, "-real.dat"))
+    if(file.exists(file_path)) {
+      sk_data <- read.table(file_path, skip = 1)
+      data[[type]] <- colMeans(sk_data)
+    }
+  }
+  
+  return(list(k = k_values, sk = data))
+}
+```
+
+# Load and Process Data
+
+```{r load_data}
+# Read data for all concentrations
+sk_data <- list()
+for(conc in conc_labels) {
+  conc_dir <- file.path(base_dir, conc)
+  if(dir.exists(conc_dir)) {
+    sk_data[[conc]] <- read_sk_data(conc_dir)
+  }
+}
+
+# Convert to long format for plotting
+plot_data <- data.frame()
+for(conc in names(sk_data)) {
+  data <- sk_data[[conc]]
+  for(type in names(corr_types)) {
+    if(!is.null(data$sk[[type]])) {
+      temp_df <- data.frame(
+        k = data$k,
+        sk = data$sk[[type]],
+        concentration = conc,
+        type = corr_types[[type]]
+      )
+      plot_data <- rbind(plot_data, temp_df)
+    }
+  }
+}
+```
+
+# Structure Factor Analysis
+
+## SP5-SP5 Correlations
+
+```{r plot_sk_ii, fig.width=10, fig.height=6}
+ggplot(plot_data %>% filter(type == "SP5-SP5"), 
+       aes(x=k, y=sk, color=concentration)) +
+  geom_line() +
+  scale_color_brewer(palette="Set1") +
+  labs(title=TeX("SP5-SP5 Structure Factor S(k)"),
+       x=TeX("k ($\\AA^{-1}$)"),
+       y=TeX("S(k)"),
+       color="Concentration") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )
+```
+
+## SP5-Water Correlations
+
+```{r plot_sk_iw, fig.width=10, fig.height=6}
+ggplot(plot_data %>% filter(type == "SP5-Water"), 
+       aes(x=k, y=sk, color=concentration)) +
+  geom_line() +
+  scale_color_brewer(palette="Set1") +
+  labs(title=TeX("SP5-Water Structure Factor S(k)"),
+       x=TeX("k ($\\AA^{-1}$)"),
+       y=TeX("S(k)"),
+       color="Concentration") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )
+```
+
+## Water-Water Correlations
+
+```{r plot_sk_ww, fig.width=10, fig.height=6}
+ggplot(plot_data %>% filter(type == "Water-Water"), 
+       aes(x=k, y=sk, color=concentration)) +
+  geom_line() +
+  scale_color_brewer(palette="Set1") +
+  labs(title=TeX("Water-Water Structure Factor S(k)"),
+       x=TeX("k ($\\AA^{-1}$)"),
+       y=TeX("S(k)"),
+       color="Concentration") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )
+```
+
+# Peak Analysis
+
+```{r peak_analysis}
+# Calculate peak positions and heights for SP5-SP5
+peak_info <- plot_data %>%
+  filter(type == "SP5-SP5") %>%
+  group_by(concentration) %>%
+  summarize(
+    peak_position = k[which.max(sk)],
+    peak_height = max(sk),
+    peak_width = diff(range(k[sk > max(sk)/2]))  # FWHM
+  ) %>%
+  arrange(concentration)
+
+knitr::kable(peak_info, 
+             caption = "Peak Analysis for SP5-SP5 Structure Factor",
+             digits = 4,
+             col.names = c("Concentration", 
+                          "Peak Position (Å⁻¹)", 
+                          "Peak Height", 
+                          "Peak Width (Å⁻¹)"))
+```
+
+# Ornstein-Zernike Analysis
+
+```{r oz_analysis}
+# Fit Ornstein-Zernike equation to small k region
+fit_oz <- function(data) {
+  # Use only small k region (first few points)
+  k_cutoff <- 0.5  # Adjust based on your data
+  small_k <- data$k <= k_cutoff
+  
+  # Fit 1/S(k) vs k^2
+  inv_sk <- 1/data$sk[small_k]
+  k_sq <- data$k[small_k]^2
+  
+  fit <- lm(inv_sk ~ k_sq)
+  
+  # Extract S(0) and correlation length
+  s0 <- 1/coef(fit)[1]
+  xi <- coef(fit)[2]/coef(fit)[1]
+  
+  return(list(s0 = s0, xi = xi))
+}
+
+# Apply OZ analysis to each concentration
+oz_results <- data.frame()
+for(conc in names(sk_data)) {
+  data <- sk_data[[conc]]
+  if(!is.null(data$sk$II)) {  # SP5-SP5 correlations
+    fit <- fit_oz(list(k = data$k, sk = data$sk$II))
+    oz_results <- rbind(oz_results, 
+                       data.frame(concentration = conc,
+                                S0 = fit$s0,
+                                xi = fit$xi))
+  }
+}
+
+knitr::kable(oz_results, 
+             caption = "Ornstein-Zernike Analysis Results",
+             digits = 4,
+             col.names = c("Concentration", 
+                          "S(0)", 
+                          "Correlation Length (Å)"))
+```
+
+# Save Processed Data
+
+```{r save_data}
+# Save processed data for future use
+write.csv(plot_data, file.path(base_dir, "processed_sk_data.csv"), 
+          row.names = FALSE)
+write.csv(peak_info, file.path(base_dir, "peak_analysis.csv"), 
+          row.names = FALSE)
+write.csv(oz_results, file.path(base_dir, "oz_analysis.csv"), 
+          row.names = FALSE)
+``` 
