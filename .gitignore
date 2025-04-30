@@ -4,7 +4,6 @@ reorganize.sh
 *.lammpstrj
 
 # Data directories
-MARTINI/data/*/*.dat
 MARTINI/data/*/*.xtc
 MARTINI/data/*/*.gro
 
