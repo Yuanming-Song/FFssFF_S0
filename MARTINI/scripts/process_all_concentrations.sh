@@ -39,14 +39,9 @@ for conc in "${CONCENTRATIONS[@]}"; do
     
     echo "Completed processing $conc"
     echo "----------------------------------------"
+    
+    # Clean up temporary data file immediately after processing
+    rm -f "$SCRIPT_DIR/$conc.data"
 done
 
-echo "All concentrations processed successfully!"
-
-# Optional: Clean up temporary .data files
-read -p "Do you want to remove the temporary .data files? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm -f "$SCRIPT_DIR"/*.data
-    echo "Temporary files cleaned up"
-fi 
+echo "All concentrations processed successfully!" 
