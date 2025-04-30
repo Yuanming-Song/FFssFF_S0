@@ -1,6 +1,6 @@
 # FFssFF Phase Separation Analysis
 
-Analysis of phase separation in FFssFF systems using structure factor calculations and the S0 method.
+Analysis of phase separation in FFssFF systems using structure factor calculations and the S0 method. See https://github.com/BingqingCheng/S0
 
 ## Project Structure
 
