@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=R_analysis
+#SBATCH --job-name=FFssFF_S0
 #SBATCH --account=dtobias_lab
 #SBATCH --partition=standard
 #SBATCH --nodes=1
