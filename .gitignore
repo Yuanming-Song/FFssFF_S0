@@ -29,3 +29,14 @@ __pycache__/
 .Trashes
 ehthumbs.db
 Thumbs.db 
+
+# Ignore analysis notebook
+MARTINI/analysis/analysis-n-plot.ipynb
+
+# R Markdown files
+*.Rmd
+*.rmd
+
+# Python notebook files
+*.ipynb
+.ipynb_checkpoints/

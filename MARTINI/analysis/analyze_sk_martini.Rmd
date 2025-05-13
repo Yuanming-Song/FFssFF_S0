@@ -16,6 +16,7 @@ library(tidyverse)
 library(ggplot2)
 library(scales)
 library(latex2exp)
+library(plotly)
 ```
 
 # System Information
@@ -31,7 +32,7 @@ concentrations <- c(25, 60, 100, 145, 205, 260, 350, 525)
 conc_labels <- paste0(concentrations, "mM")
 
 # Base directory
-base_dir <- "/dfs9/tw/yuanmis1/mrsec/FFssFF/S0/FFssFF_S0/MARTINI/data"
+base_dir <- "/Users/song/Documents/Research/MRSEC/FFssFF/S0_method/S0/MARTINI"
 
 # Correlation types
 corr_types <- list(
@@ -82,8 +83,12 @@ read_sk_data <- function(conc_dir) {
 sk_data <- list()
 for(conc in conc_labels) {
   conc_dir <- file.path(base_dir, conc)
+  print(paste("Processing directory:", conc_dir))
   if(dir.exists(conc_dir)) {
+    print(paste("Directory exists for concentration:", conc))
     sk_data[[conc]] <- read_sk_data(conc_dir)
+  } else {
+    print(paste("Directory does not exist for concentration:", conc))
   }
 }
 
@@ -91,18 +96,30 @@ for(conc in conc_labels) {
 plot_data <- data.frame()
 for(conc in names(sk_data)) {
   data <- sk_data[[conc]]
+  print(paste("Processing data for concentration:", conc))
   for(type in names(corr_types)) {
     if(!is.null(data$sk[[type]])) {
+      print(paste("Found data for type:", type))
       temp_df <- data.frame(
         k = data$k,
         sk = data$sk[[type]],
-        concentration = conc,
+        concentration = factor(conc, levels = conc_labels),  # Ensure proper ordering
         type = corr_types[[type]]
       )
       plot_data <- rbind(plot_data, temp_df)
+    } else {
+      print(paste("No data found for type:", type, "in concentration:", conc))
     }
   }
 }
+
+# Print data structure for debugging
+print("Structure of plot_data:")
+str(plot_data)
+print("Unique types in plot_data:")
+print(unique(plot_data$type))
+print("Unique concentrations in plot_data:")
+print(unique(plot_data$concentration))
 ```
 
 # Structure Factor Analysis
@@ -110,61 +127,89 @@ for(conc in names(sk_data)) {
 ## SP5-SP5 Correlations
 
 ```{r plot_sk_ii, fig.width=10, fig.height=6}
-ggplot(plot_data %>% filter(type == "SP5-SP5"), 
-       aes(x=k, y=sk, color=concentration)) +
-  geom_line() +
-  scale_color_brewer(palette="Set1") +
-  labs(title=TeX("SP5-SP5 Structure Factor S(k)"),
-       x=TeX("k ($\\AA^{-1}$)"),
-       y=TeX("S(k)"),
-       color="Concentration") +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    legend.position = "right",
-    axis.text = element_text(size = 10),
-    axis.title = element_text(size = 12)
-  )
+# First check if we have data
+if(nrow(plot_data) > 0) {
+  sp5_data <- plot_data %>% filter(type == "SP5-SP5")
+  print(paste("Number of rows in SP5-SP5 data:", nrow(sp5_data)))
+  
+  p_ii <- ggplot(sp5_data, 
+         aes(x=k, y=sk, color=concentration)) +
+    geom_line() +
+    scale_color_brewer(palette="Set1") +
+    labs(title=TeX("SP5-SP5 Structure Factor S(k)"),
+         x=TeX("k ($\\AA^{-1}$)"),
+         y=TeX("S(k)"),
+         color="Concentration") +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      legend.position = "right",
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 12)
+    )
+
+  ggplotly(p_ii)
+} else {
+  print("No data available for SP5-SP5 plot")
+}
 ```
 
 ## SP5-Water Correlations
 
 ```{r plot_sk_iw, fig.width=10, fig.height=6}
-ggplot(plot_data %>% filter(type == "SP5-Water"), 
-       aes(x=k, y=sk, color=concentration)) +
-  geom_line() +
-  scale_color_brewer(palette="Set1") +
-  labs(title=TeX("SP5-Water Structure Factor S(k)"),
-       x=TeX("k ($\\AA^{-1}$)"),
-       y=TeX("S(k)"),
-       color="Concentration") +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    legend.position = "right",
-    axis.text = element_text(size = 10),
-    axis.title = element_text(size = 12)
-  )
+if(nrow(plot_data) > 0) {
+  sp5_water_data <- plot_data %>% filter(type == "SP5-Water")
+  print(paste("Number of rows in SP5-Water data:", nrow(sp5_water_data)))
+  
+  p_iw <- ggplot(sp5_water_data, 
+         aes(x=k, y=sk, color=concentration)) +
+    geom_line() +
+    scale_color_brewer(palette="Set1") +
+    labs(title=TeX("SP5-Water Structure Factor S(k)"),
+         x=TeX("k ($\\AA^{-1}$)"),
+         y=TeX("S(k)"),
+         color="Concentration") +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      legend.position = "right",
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 12)
+    )
+
+  ggplotly(p_iw)
+} else {
+  print("No data available for SP5-Water plot")
+}
 ```
 
 ## Water-Water Correlations
 
 ```{r plot_sk_ww, fig.width=10, fig.height=6}
-ggplot(plot_data %>% filter(type == "Water-Water"), 
-       aes(x=k, y=sk, color=concentration)) +
-  geom_line() +
-  scale_color_brewer(palette="Set1") +
-  labs(title=TeX("Water-Water Structure Factor S(k)"),
-       x=TeX("k ($\\AA^{-1}$)"),
-       y=TeX("S(k)"),
-       color="Concentration") +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    legend.position = "right",
-    axis.text = element_text(size = 10),
-    axis.title = element_text(size = 12)
-  )
+if(nrow(plot_data) > 0) {
+  water_data <- plot_data %>% filter(type == "Water-Water")
+  print(paste("Number of rows in Water-Water data:", nrow(water_data)))
+  
+  p_ww <- ggplot(water_data, 
+         aes(x=k, y=sk, color=concentration)) +
+    geom_line() +
+    scale_color_brewer(palette="Set1") +
+    labs(title=TeX("Water-Water Structure Factor S(k)"),
+         x=TeX("k ($\\AA^{-1}$)"),
+         y=TeX("S(k)"),
+         color="Concentration") +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      legend.position = "right",
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 12)
+    )
+
+  ggplotly(p_ww)
+} else {
+  print("No data available for Water-Water plot")
+}
 ```
 
 # Peak Analysis
@@ -233,14 +278,131 @@ knitr::kable(oz_results,
                           "Correlation Length (Å)"))
 ```
 
+# S(0) vs Concentration Analysis
+```{r s0_analysis, fig.width=6, fig.height=4}
+# Convert concentrations from mM to mol/L
+conc_molar <- concentrations / 1000  # Convert mM to M
+
+# Print structure of oz_results for debugging
+print("Structure of oz_results:")
+str(oz_results)
+
+# Create S(0) data frame directly from oz_results
+s0_data <- oz_results %>%
+  mutate(
+    concentration = as.numeric(gsub("mM", "", concentration)) / 1000  # Convert from mM to M
+  )
+
+# Plot S(0) vs concentration
+p_s0 <- ggplot(s0_data, aes(x = concentration, y = S0, color = type)) +
+  geom_point(shape = 21, fill = "white", size = 3) +
+  geom_line() +
+  geom_errorbar(aes(ymin = S0 - 0.1*S0, ymax = S0 + 0.1*S0), width = 0.02) +  # Example error bars
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    x = TeX("$c_A$ [mol/L]"),
+    y = TeX("$S(0)$"),
+    color = "Correlation"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )
+
+ggplotly(p_s0)
+```
+
+# Correlation Length Analysis
+```{r xi_analysis, fig.width=6, fig.height=4}
+# Create correlation length plot using the same data frame
+p_xi <- ggplot(s0_data, aes(x = concentration, y = xi, color = type)) +
+  geom_point(shape = 21, fill = "white", size = 3) +
+  geom_line() +
+  geom_errorbar(aes(ymin = xi - 0.1*xi, ymax = xi + 0.1*xi), width = 0.02) +  # Example error bars
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    x = TeX("$c_A$ [mol/L]"),
+    y = TeX("$\\xi$ [\\AA]"),
+    color = "Correlation"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )
+
+ggplotly(p_xi)
+```
+
+# Structure Factor vs k Analysis
+```{r sk_analysis, fig.width=6, fig.height=4}
+# Create plot for each concentration
+for(conc in unique(plot_data$concentration)) {
+  conc_data <- plot_data %>% filter(concentration == conc)
+  
+  p_sk <- ggplot(conc_data, aes(x = k, y = sk, color = type)) +
+    geom_line() +
+    geom_point(shape = 21, fill = "white", size = 2) +
+    scale_color_brewer(palette = "Set1") +
+    labs(
+      title = paste0("Structure Factors at ", conc),
+      x = TeX("$k$ [\\AA$^{-1}$]"),
+      y = TeX("$S(k)$"),
+      color = "Correlation"
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "right",
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 12),
+      plot.title = element_text(size = 14, face = "bold")
+    )
+  
+  print(ggplotly(p_sk))
+}
+```
+
+# Ornstein-Zernike Fits
+```{r oz_fits, fig.width=6, fig.height=4}
+# Plot OZ fits for selected k range
+k_cutoff <- 0.5  # Same as in fit_oz function
+for(conc in unique(plot_data$concentration)) {
+  conc_data <- plot_data %>% 
+    filter(concentration == conc, k <= k_cutoff)
+  
+  p_oz <- ggplot(conc_data, aes(x = k^2, y = 1/sk, color = type)) +
+    geom_point(shape = 21, fill = "white", size = 2) +
+    geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+    scale_color_brewer(palette = "Set1") +
+    labs(
+      title = paste0("Ornstein-Zernike Fit at ", conc),
+      x = TeX("$k^2$ [\\AA$^{-2}$]"),
+      y = TeX("$1/S(k)$"),
+      color = "Correlation"
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "right",
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 12),
+      plot.title = element_text(size = 14, face = "bold")
+    )
+  
+  print(ggplotly(p_oz))
+}
+```
+
 # Save Processed Data
 
-```{r save_data}
-# Save processed data for future use
-write.csv(plot_data, file.path(base_dir, "processed_sk_data.csv"), 
-          row.names = FALSE)
-write.csv(peak_info, file.path(base_dir, "peak_analysis.csv"), 
-          row.names = FALSE)
-write.csv(oz_results, file.path(base_dir, "oz_analysis.csv"), 
-          row.names = FALSE)
+```{r save_data, eval=FALSE}
+# Commented out saving data section since it's not needed
+# write.csv(plot_data, file.path(base_dir, "processed_sk_data.csv"), 
+#           row.names = FALSE)
+# write.csv(peak_info, file.path(base_dir, "peak_analysis.csv"), 
+#           row.names = FALSE)
+# write.csv(oz_results, file.path(base_dir, "oz_analysis.csv"), 
+#           row.names = FALSE)
 ``` 
